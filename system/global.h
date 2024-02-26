@@ -110,6 +110,8 @@ extern char * output_file;
 extern UInt32 g_max_items;
 extern UInt32 g_cust_per_dist;
 
+
+/* Return Code */
 enum RC { RCOK, Commit, Abort, WAIT, ERROR, FINISH};
 
 /* Thread */
@@ -121,7 +123,6 @@ typedef uint64_t txn_t;
 /* Table and Row */
 typedef uint64_t rid_t; // row id
 typedef uint64_t pgid_t; // page id
-
 
 
 /* INDEX */

@@ -19,9 +19,11 @@ void parser(int argc, char * argv[]);
 
 int main(int argc, char* argv[])
 {
+
+	// 初始化相关参数设置
 	parser(argc, argv);
 	
-	mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt); 
+	mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt);
 	stats.init();
 	glob_manager = (Manager *) _mm_malloc(sizeof(Manager), 64);
 	glob_manager->init();
@@ -29,6 +31,8 @@ int main(int argc, char* argv[])
 		dl_detector.init();
 	printf("mem_allocator initialized!\n");
 	workload * m_wl;
+
+	//不同的baseline的workload
 	switch (WORKLOAD) {
 		case YCSB :
 			m_wl = new ycsb_wl; break;
@@ -48,12 +52,15 @@ int main(int argc, char* argv[])
 	pthread_t p_thds[thd_cnt - 1];
 	m_thds = new thread_t * [thd_cnt];
 	for (uint32_t i = 0; i < thd_cnt; i++)
+		// 这里要记住，创建了相应的指针数组后还得实例化，也就是创建相应的内存空间
 		m_thds[i] = (thread_t *) _mm_malloc(sizeof(thread_t), 64);
 	// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
 	query_queue = (Query_queue *) _mm_malloc(sizeof(Query_queue), 64);
 	if (WORKLOAD != TEST)
 		query_queue->init(m_wl);
+
+	// pthread_barrier是屏障，是一种同步机制，用于保证多线程的正确性
 	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt );
 	printf("query_queue initialized!\n");
 #if CC_ALG == HSTORE
@@ -89,11 +96,15 @@ int main(int argc, char* argv[])
 	int64_t starttime = get_server_clock();
 	for (uint32_t i = 0; i < thd_cnt - 1; i++) {
 		uint64_t vid = i;
+		/* 创建线程并调用函数 f */
 		pthread_create(&p_thds[i], NULL, f, (void *)vid);
 	}
 	f((void *)(thd_cnt - 1));
+
 	for (uint32_t i = 0; i < thd_cnt - 1; i++) 
+		/*下述功能作为阻塞本的线程，并等待p_thds[i]执行结束*/
 		pthread_join(p_thds[i], NULL);
+
 	int64_t endtime = get_server_clock();
 	
 	if (WORKLOAD != TEST) {
@@ -106,6 +117,8 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
+/* 此函数功能是启动线程的transaction manager
+pthread_create 只允许传递一个 void* 类型的参数*/
 void * f(void * id) {
 	uint64_t tid = (uint64_t)id;
 	m_thds[tid]->run();

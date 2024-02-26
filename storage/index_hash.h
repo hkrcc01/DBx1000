@@ -47,6 +47,8 @@ public:
 	RC	 		index_read(idx_key_t key, itemid_t * &item,
 							int part_id=-1, int thd_id=0);
 private:
+
+	/* Latch 主要用于保护数据库的关键部分，以防止多个线程同时对同一资源进行写操作 */
 	void get_latch(BucketHeader * bucket);
 	void release_latch(BucketHeader * bucket);
 	

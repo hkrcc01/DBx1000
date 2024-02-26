@@ -31,6 +31,8 @@ void thread_t::set_host_cid(uint64_t cid) { _host_cid = cid; }
 uint64_t thread_t::get_cur_cid() { return _cur_cid; }
 void thread_t::set_cur_cid(uint64_t cid) {_cur_cid = cid; }
 
+
+/* 所有线程完成transaction执行的入口 */
 RC thread_t::run() {
 #if !NOGRAPHITE
 	_thd_id = CarbonGetTileId();
@@ -58,6 +60,8 @@ RC thread_t::run() {
 
 	while (true) {
 		ts_t starttime = get_sys_clock();
+
+		// 这一段主要是从队列里头拿一个quary
 		if (WORKLOAD != TEST) {
 			int trial = 0;
 			if (_abort_buffer_enable) {
@@ -96,6 +100,8 @@ RC thread_t::run() {
 					m_query = query_queue->get_next_query( _thd_id );
 			}
 		}
+
+		//更新一下统计数据
 		INC_STATS(_thd_id, time_query, get_sys_clock() - starttime);
 		m_txn->abort_cnt = 0;
 //#if CC_ALG == VLL
@@ -104,6 +110,7 @@ RC thread_t::run() {
 		m_txn->set_txn_id(get_thd_id() + thd_txn_id * g_thread_cnt);
 		thd_txn_id ++;
 
+		//注意CC_ALG是同步控制的算法
 		if ((CC_ALG == HSTORE && !HSTORE_LOCAL_TS)
 				|| CC_ALG == MVCC 
 				|| CC_ALG == HEKATON
@@ -127,6 +134,8 @@ RC thread_t::run() {
 		// results should be the same.
 		m_txn->start_ts = get_next_ts(); 
 #endif
+
+		/* Return Code OK */
 		if (rc == RCOK) 
 		{
 #if CC_ALG != VLL

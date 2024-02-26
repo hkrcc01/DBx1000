@@ -124,6 +124,7 @@ row_t * txn_man::get_row(row_t * row, access_t type) {
 		return row;
 	uint64_t starttime = get_sys_clock();
 	RC rc = RCOK;
+	/* 目前看来这一部分代码是用于记录查询历史history */
 	if (accesses[row_cnt] == NULL) {
 		Access * access = (Access *) _mm_malloc(sizeof(Access), 64);
 		accesses[row_cnt] = access;
@@ -188,6 +189,7 @@ itemid_t *
 txn_man::index_read(INDEX * index, idx_key_t key, int part_id) {
 	uint64_t starttime = get_sys_clock();
 	itemid_t * item;
+	/* get_thd_id应该就是获取本manager的线程id */
 	index->index_read(key, item, part_id, get_thd_id());
 	INC_TMP_STATS(get_thd_id(), time_index, get_sys_clock() - starttime);
 	return item;

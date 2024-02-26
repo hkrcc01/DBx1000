@@ -72,6 +72,7 @@ RC IndexHash::index_read(idx_key_t key, itemid_t * &item,
 						int part_id, int thd_id) {
 	uint64_t bkt_idx = hash(key);
 	assert(bkt_idx < _bucket_cnt_per_part);
+	// 这里应该是物理存储相应的数据的地方，初步可见，先分成part，再是bkt
 	BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
 	RC rc = RCOK;
 	// 1. get the sh latch
@@ -104,7 +105,7 @@ void BucketHeader::insert_item(idx_key_t key,
 	}
 	if (cur_node == NULL) {		
 		BucketNode * new_node = (BucketNode *) 
-			mem_allocator.alloc(sizeof(BucketNode), part_id );
+			mem_allocator.alloc(sizeof(BucketNode), part_id);
 		new_node->init(key);
 		new_node->items = item;
 		if (prev_node != NULL) {

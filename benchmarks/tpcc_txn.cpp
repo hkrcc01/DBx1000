@@ -15,6 +15,7 @@ void tpcc_txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	_wl = (tpcc_wl *) h_wl;
 }
 
+// run transaction
 RC tpcc_txn_man::run_txn(base_query * query) {
 	tpcc_query * m_query = (tpcc_query *) query;
 	switch (m_query->type) {
@@ -41,8 +42,10 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 	uint64_t w_id = query->w_id;
     uint64_t c_w_id = query->c_w_id;
 	/*====================================================+
-    	EXEC SQL UPDATE warehouse SET w_ytd = w_ytd + :h_amount
-		WHERE w_id=:w_id;
+    	EXEC SQL 
+		UPDATE warehouse 
+		SET w_ytd = w_ytd + :h_amount 
+		WHERE w_id = :w_id;
 	+====================================================*/
 	/*===================================================================+
 		EXEC SQL SELECT w_street_1, w_street_2, w_city, w_state, w_zip, w_name
@@ -54,7 +57,7 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 	// TODO for variable length variable (string). Should store the size of 
 	// the variable.
 	key = query->w_id;
-	INDEX * index = _wl->i_warehouse; 
+	INDEX * index = _wl->i_warehouse;
 	item = index_read(index, key, wh_to_part(w_id));
 	assert(item != NULL);
 	row_t * r_wh = ((row_t *)item->location);
@@ -68,7 +71,7 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 		return finish(Abort);
 	}
 	double w_ytd;
-	
+	/* 更新一下需要更新的值 */
 	r_wh_local->get_value(W_YTD, w_ytd);
 	if (g_wh_update) {
 		r_wh_local->set_value(W_YTD, w_ytd + query->h_amount);
@@ -78,10 +81,17 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 	memcpy(w_name, tmp_str, 10);
 	w_name[10] = '\0';
 	/*=====================================================+
-		EXEC SQL UPDATE district SET d_ytd = d_ytd + :h_amount
+		EXEC SQL 
+		UPDATE district SET d_ytd = d_ytd + :h_amount
 		WHERE d_w_id=:w_id AND d_id=:d_id;
 	+=====================================================*/
+	/* 这个key应该是表的主键 */
 	key = distKey(query->d_id, query->d_w_id);
+
+	/* 
+		该函数的第一个参数是存储的指针？
+		_wl-><table_name>表示不同表单的地址也就是如下的district的地址，warehouse的地址
+	 */
 	item = index_read(_wl->i_district, key, wh_to_part(w_id));
 	assert(item != NULL);
 	row_t * r_dist = ((row_t *)item->location);
@@ -208,11 +218,11 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 	}
 	
 	char h_data[25];
-	strncpy(h_data, w_name, 10);
+	memcpy(h_data, w_name, 10);
 	int length = strlen(h_data);
 	if (length > 10) length = 10;
 	strcpy(&h_data[length], "    ");
-	strncpy(&h_data[length + 4], d_name, 10);
+	memcpy(&h_data[length + 4], d_name, 10);
 	h_data[length+14] = '\0';
 	/*=============================================================================+
 	  EXEC SQL INSERT INTO

@@ -35,11 +35,15 @@ public:
 
 };
 
+
+// transaction manager
 class txn_man
 {
 public:
 	virtual void init(thread_t * h_thd, workload * h_wl, uint64_t part_id);
 	void release();
+
+	/* thd表示thread，wl表示workload */
 	thread_t * h_thd;
 	workload * h_wl;
 	myrand * mrand;
