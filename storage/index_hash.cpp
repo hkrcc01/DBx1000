@@ -65,7 +65,6 @@ RC IndexHash::index_read(idx_key_t key, itemid_t * &item, int part_id) {
 	// 3. release the latch
 //	release_latch(cur_bkt);
 	return rc;
-
 }
 
 RC IndexHash::index_read(idx_key_t key, itemid_t * &item, 
