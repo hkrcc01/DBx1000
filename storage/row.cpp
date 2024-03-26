@@ -132,6 +132,12 @@ void row_t::free_row() {
 	free(data);
 }
 
+#if DETLA_STORAGE_ENABLE && PIM_ENABLE
+void row_t::init_detla_buffer(u_int64_t index, table_s * t) {
+	this->manager->init_detla_buffer(index, t);
+}
+#endif
+
 RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	RC rc = RCOK;
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT

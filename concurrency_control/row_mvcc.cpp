@@ -10,8 +10,8 @@
 
 void Row_mvcc::init(row_t * row) {
 	_row = row;
-	_his_len = 4;
-	_req_len = _his_len;
+	_his_len = HIS_LEN;
+	_req_len = REQ_LEN;
 
 	_write_history = (WriteHisEntry *) _mm_malloc(sizeof(WriteHisEntry) * _his_len, 64);
 	_requests = (ReqEntry *) _mm_malloc(sizeof(ReqEntry) * _req_len, 64);
@@ -33,6 +33,13 @@ void Row_mvcc::init(row_t * row) {
 	latch = (pthread_mutex_t *) _mm_malloc(sizeof(pthread_mutex_t), 64);
 	pthread_mutex_init(latch, NULL);
 }
+
+#if DETLA_STORAGE_ENABLE && PIM_ENABLE
+void Row_mvcc::init_detla_buffer(u_int64_t index, table_s * t) {
+	this->_index_of_storage = index;
+	this->_table = t;
+}
+#endif
 
 void Row_mvcc::buffer_req(TsType type, txn_man * txn, bool served)
 {
@@ -58,9 +65,7 @@ void Row_mvcc::buffer_req(TsType type, txn_man * txn, bool served)
 }
 
 
-void 
-Row_mvcc::double_list(uint32_t list)
-{
+void Row_mvcc::double_list(uint32_t list) {
 	if (list == 0) {
 		WriteHisEntry * temp = (WriteHisEntry *) _mm_malloc(sizeof(WriteHisEntry) * _his_len * 2, 64);
 		for (uint32_t i = 0; i < _his_len; i++) {
@@ -177,6 +182,9 @@ INC_STATS(txn->get_thd_id(), debug4, t2 - t1);
 		_latest_row = row;
 		_exists_prewrite = false;
 		_num_versions ++;
+#if DETLA_STORAGE_ENABLE && PIM_ENABLE
+		_table->insert_detla(_index_of_storage, _prewrite_his_id, row);
+#endif
 		update_buffer(txn, W_REQ);
 	} else if (type == XP_REQ) {
 		assert(row == _write_history[_prewrite_his_id].row);
@@ -196,18 +204,18 @@ INC_STATS(txn->get_thd_id(), debug3, get_sys_clock() - t2);
 	return rc;
 }
 
-row_t *
-Row_mvcc::reserveRow(ts_t ts, txn_man * txn)
-{
+row_t * Row_mvcc::reserveRow(ts_t ts, txn_man * txn) {
 	assert(!_exists_prewrite);
 	
 	// Garbage Collection
 	ts_t min_ts = glob_manager->get_min_ts(txn->get_thd_id());
+	// Only if the buffer is full, we get the garage collection
 	if (_oldest_wts < min_ts && 
 		_num_versions == _his_len)
 	{
 		ts_t max_recycle_ts = 0;
 		ts_t idx = _his_len;
+		// get one entry to update
 		for (uint32_t i = 0; i < _his_len; i++) {
 			if (_write_history[i].valid
 				&& _write_history[i].ts < min_ts
@@ -223,6 +231,9 @@ Row_mvcc::reserveRow(ts_t ts, txn_man * txn)
 			_row = _write_history[idx].row;
 			_write_history[idx].row = temp;
 			_oldest_wts = max_recycle_ts;
+#if DETLA_STORAGE_ENABLE && PIM_ENABLE
+			_table->detla_update_and_invalid(idx, _index_of_storage);
+#endif
 			for (uint32_t i = 0; i < _his_len; i++) {
 				if (_write_history[i].valid
 					&& _write_history[i].ts <= max_recycle_ts)
@@ -264,6 +275,7 @@ Row_mvcc::reserveRow(ts_t ts, txn_man * txn)
 				 	 && !_write_history[i].reserved)
 				idx = i;
 		}
+		// There is must having an entry as reserve to return
 		assert(idx < _his_len);
 	}
 	row_t * row;

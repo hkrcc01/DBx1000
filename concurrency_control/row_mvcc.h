@@ -1,5 +1,7 @@
 #pragma once
 
+#include "pim.h"
+
 class table_t;
 class Catalog;
 class txn_man;
@@ -29,6 +31,9 @@ class Row_mvcc {
 public:
 	void init(row_t * row);
 	RC access(txn_man * txn, TsType type, row_t * row);
+#if DETLA_STORAGE_ENABLE && PIM_ENABLE
+	void init_detla_buffer(u_int64_t index, table_s * t);
+#endif
 private:
  	pthread_mutex_t * latch;
 	volatile bool blatch;
@@ -44,6 +49,10 @@ private:
 	ts_t			_latest_wts;
 	ts_t			_oldest_wts;
 	WriteHisEntry * _write_history;
+#if DETLA_STORAGE_ENABLE && PIM_ENABLE
+	u_int64_t		_index_of_storage;
+	table_s *		_table;
+#endif
 	// the following is a small optimization.
 	// the timestamp for the served prewrite request. There should be at most one 
 	// served prewrite request. 

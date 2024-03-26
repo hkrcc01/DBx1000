@@ -3,6 +3,7 @@
 
 #include "wl.h"
 #include "txn.h"
+#include "pim.h"
 
 class table_t;
 class INDEX;
@@ -14,6 +15,14 @@ public:
 	RC init_table();
 	RC init_schema(const char * schema_file);
 	RC get_txn_man(txn_man *& txn_manager, thread_t * h_thd);
+	RC init_table_size();
+
+	RC init_st_wh();
+	RC init_st_item();
+	RC init_st_dist();
+	RC init_st_stock();
+	RC init_st_cust(char * name, u_int64_t name_len);
+
 	table_t * 		t_warehouse;
 	table_t * 		t_district;
 	table_t * 		t_customer;
@@ -33,9 +42,20 @@ public:
 	INDEX * 	i_order; // key = (w_id, d_id, o_id)
 	INDEX * 	i_orderline; // key = (w_id, d_id, o_id)
 	INDEX * 	i_orderline_wd; // key = (w_id, d_id). 
+
+	u_int32_t l_item;
+	u_int32_t l_warehouse;
+	u_int32_t l_customer;
+	u_int32_t l_stock;
+	u_int32_t l_district;
 	
 	bool ** delivering;
 	uint32_t next_tid;
+
+#if PIM_ENABLE
+	storage * st;
+#endif
+
 private:
 	uint64_t num_wh;
 	void init_tab_item();
@@ -57,6 +77,8 @@ private:
 	static void * threadInitOrder(void * This);
 
 	static void * threadInitWarehouse(void * This);
+
+	static void free_arr(u_int32_t *** &tar, u_int32_t b_c, u_int32_t d_c);
 };
 
 class tpcc_txn_man : public txn_man

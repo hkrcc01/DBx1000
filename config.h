@@ -59,40 +59,58 @@
 #define INDEX_STRUCT				IDX_HASH
 #define BTREE_ORDER 				16
 
+// [ PIM ]
+#define PIM_ENABLE					false
+#define RANK_CNT					4
+#define BANK_CNT_PER_RANK			4	// 4个bank
+#define DEVICE_CNT_PER_BANK			8	// 4个device
+#define VERSION_NUM					4	// MVCC版本的数量
+#define PIM_INIT_DEBUG				false // 初始化的debug
+
 // [DL_DETECT] 
 #define DL_LOOP_DETECT				1000 	// 100 us
 #define DL_LOOP_TRIAL				100	// 1 us
 #define NO_DL						KEY_ORDER
 #define TIMEOUT						1000000 // 1ms
+
 // [TIMESTAMP]
 #define TS_TWR						false
 #define TS_ALLOC					TS_CAS
 #define TS_BATCH_ALLOC				false
 #define TS_BATCH_NUM				1
+
 // [MVCC]
 // when read/write history is longer than HIS_RECYCLE_LEN
 // the history should be recycled.
-//#define HIS_RECYCLE_LEN				10
-//#define MAX_PRE_REQ					1024
-//#define MAX_READ_REQ				1024
+#define HIS_LEN						4
+#define REQ_LEN						4
+#define DETLA_STORAGE_ENABLE		true
+// #define HIS_RECYCLE_LEN			10
+// #define MAX_PRE_REQ				1024
+// #define MAX_READ_REQ				1024
 #define MIN_TS_INTVL				5000000 //5 ms. In nanoseconds
+
 // [OCC]
 #define MAX_WRITE_SET				10
 #define PER_ROW_VALID				true
+
 // [TICTOC]
 #define WRITE_COPY_FORM				"data" // ptr or data
 #define TICTOC_MV					false
 #define WR_VALIDATION_SEPARATE		true
 #define WRITE_PERMISSION_LOCK		false
 #define ATOMIC_TIMESTAMP			"false"
+
 // [TICTOC, SILO]
 #define VALIDATION_LOCK				"no-wait" // no-wait or waiting
 #define PRE_ABORT					"true"
 #define ATOMIC_WORD					true
+
 // [HSTORE]
 // when set to true, hstore will not access the global timestamp.
 // This is fine for single partition transactions. 
 #define HSTORE_LOCAL_TS				false
+
 // [VLL] 
 #define TXN_QUEUE_SIZE_LIMIT		THREAD_CNT
 
@@ -127,7 +145,7 @@
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory
 // small tpcc schemas shrink the table size.
-#define TPCC_SMALL					false
+#define TPCC_SMALL					true
 // Some of the transactions read the data but never use them. 
 // If TPCC_ACCESS_ALL == fales, then these parts of the transactions
 // are not modeled.

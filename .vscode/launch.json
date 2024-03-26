@@ -11,9 +11,6 @@
             "stopAtEntry": false,
             "program": "${workspaceRoot}/rundb",
             "externalConsole": false,
-            "args": [
-                "-t1"
-            ],
             "cwd": "${workspaceFolder}",
             "setupCommands": [
                 {
