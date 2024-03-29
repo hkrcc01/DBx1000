@@ -133,7 +133,7 @@ void row_t::free_row() {
 }
 
 #if DETLA_STORAGE_ENABLE && PIM_ENABLE
-void row_t::init_detla_buffer(u_int64_t index, table_s * t) {
+void row_t::init_detla_buffer(u_int32_t index, table_s * t) {
 	this->manager->init_detla_buffer(index, t);
 }
 #endif

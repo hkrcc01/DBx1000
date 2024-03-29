@@ -35,7 +35,7 @@ void Row_mvcc::init(row_t * row) {
 }
 
 #if DETLA_STORAGE_ENABLE && PIM_ENABLE
-void Row_mvcc::init_detla_buffer(u_int64_t index, table_s * t) {
+void Row_mvcc::init_detla_buffer(u_int32_t index, table_s * t) {
 	this->_index_of_storage = index;
 	this->_table = t;
 }

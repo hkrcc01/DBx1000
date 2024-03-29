@@ -19,7 +19,7 @@ void part::init(u_int32_t width) {
 
 // <================class table================>
 
-void table_s::insert_tuple(void ** data, u_int64_t &index) {
+void table_s::insert_tuple(void ** data, u_int32_t &index) {
     field * f_tmp;
     u_int32_t part_no;
     u_int32_t row_no;
@@ -50,20 +50,56 @@ void table_s::insert_tuple(void ** data, u_int64_t &index) {
             // get the offset of this device 
             tar_tmp += col_no;
             memcpy(tar_tmp, data_tmp, size);
+            // update data pointer
+            data_tmp += size;
 		}
     }
     index = tuple_cnt++;
 }
 
+void table_s::get_value(u_int32_t field_index, u_int32_t row_index, void * &value) {
+    u_int32_t part_no;
+    u_int32_t row_no;
+    u_int32_t col_no;
+    u_int32_t size;
+    u_int32_t banks_cnt = BANK_CNT_PER_RANK * RANK_CNT;
+    u_int32_t devices_cnt = DEVICE_CNT_PER_BANK;
+
+    field * f_tmp = this->fields[field_index];
+    char * tar_tmp;
+    char * t_value = (char*)value;
+
+    for (u_int32_t fc = 0; fc < f_tmp->cnt; fc++) {
+        part_no = f_tmp->banks_id[fc];
+        row_no = f_tmp->devices_id[fc];
+        col_no = f_tmp->indexs[fc];
+        size = f_tmp->sizes[fc];
+
+        // tuple_cnt decribles the number of tuples now
+        // get the bank id
+        tar_tmp = (char*)parts[part_no]->head[(row_index) % banks_cnt];
+        // get the row id
+        tar_tmp += (row_index / banks_cnt) * parts[part_no]->width * devices_cnt;
+        // get the device id
+        tar_tmp += row_no * parts[part_no]->width;
+        // get the offset of this device 
+        tar_tmp += col_no;
+        memcpy(t_value, tar_tmp, size);
+        // update data pointer
+        t_value += size;
+    }
+
+}
+
 #if DETLA_STORAGE_ENABLE
 
-void table_s::detla_update_and_invalid(u_int64_t version_id, u_int64_t storage_index) {
+void table_s::detla_update_and_invalid(u_int32_t version_id, u_int32_t storage_index) {
     char * data_tmp;
     char * detla_tmp;
 
     u_int32_t banks_cnt = BANK_CNT_PER_RANK * RANK_CNT;
     u_int32_t devices_cnt = DEVICE_CNT_PER_BANK;
-    u_int64_t version_num = VERSION_NUM;
+    u_int32_t version_num = VERSION_NUM;
 
     for (u_int32_t p = 0; p < parts_cnt; p++) {
         data_tmp = (char*)parts[p]->head[(storage_index) % banks_cnt];
@@ -77,7 +113,7 @@ void table_s::detla_update_and_invalid(u_int64_t version_id, u_int64_t storage_i
     }
 }
 
-void table_s::insert_detla(u_int64_t storage_index, u_int64_t version_id, row_t * r) {
+void table_s::insert_detla(u_int32_t storage_index, u_int32_t version_id, row_t * r) {
     field * f_tmp;
     u_int32_t part_no;
     u_int32_t row_no;
@@ -85,7 +121,7 @@ void table_s::insert_detla(u_int64_t storage_index, u_int64_t version_id, row_t 
     u_int32_t size;
     u_int32_t banks_cnt = BANK_CNT_PER_RANK * RANK_CNT;
     u_int32_t devices_cnt = DEVICE_CNT_PER_BANK;
-    u_int64_t version_num = VERSION_NUM;
+    u_int32_t version_num = VERSION_NUM;
 
     char * data_tmp;
     char * tar_tmp;
@@ -111,6 +147,8 @@ void table_s::insert_detla(u_int64_t storage_index, u_int64_t version_id, row_t 
             // get the offset of this device
             tar_tmp += col_no;
             memcpy(tar_tmp, data_tmp, size);
+            // update data pointer
+            data_tmp += size;
 		}
     }
 }
@@ -198,6 +236,44 @@ void table_s::init_table_size(u_int32_t row_cnt) {
             parts[p]->detla[b] = _mm_malloc(DEVICE_CNT_PER_BANK * parts[p]->width * row_per_bank * VERSION_NUM, 1);
 #endif
         }
+    }
+}
+
+void table_s::print_line(u_int32_t line_index) {
+    part * pa;
+    unsigned char * bytePtr;
+    u_int32_t banks_cnt = BANK_CNT_PER_RANK * RANK_CNT;
+    u_int32_t devices_cnt = DEVICE_CNT_PER_BANK;
+
+    for (u_int32_t i = 0; i < parts_cnt; i++) {
+        printf("<====DEBUG_MSG_");
+        
+        for (int nn = 0; name[nn] != '\0'; nn++) {
+            printf("%c", name[nn]);
+        }
+        
+        printf("_LINE_%d_PARTATION_%d====>:\r\n", line_index, i);
+
+        pa = parts[i];
+
+        // get the bank id
+        bytePtr = (unsigned char *)pa->head[line_index % banks_cnt];
+        // get the row id
+        bytePtr += (line_index / banks_cnt) * devices_cnt * pa->width;
+
+        for (u_int32_t j = 0; j < devices_cnt; j++) {
+            printf("DEVICE_%d----> ", j);
+            for (u_int32_t k = 0; k < pa->width; k++){
+                printf("%02x ", bytePtr[j * pa->width + k]);
+            }
+            printf("\r\n");
+        }
+
+        printf("<");
+        for (int nn = 0; name[nn] != '\0'; nn++) {
+            printf("=");
+        }
+        printf("=====================================>\r\n");
     }
 }
 

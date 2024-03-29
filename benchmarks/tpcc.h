@@ -1,6 +1,8 @@
 #ifndef _TPCC_H_
 #define _TPCC_H_
 
+#include <stdlib.h>
+#include <string.h>
 #include "wl.h"
 #include "txn.h"
 #include "pim.h"
@@ -17,11 +19,7 @@ public:
 	RC get_txn_man(txn_man *& txn_manager, thread_t * h_thd);
 	RC init_table_size();
 
-	RC init_st_wh();
-	RC init_st_item();
-	RC init_st_dist();
-	RC init_st_stock();
-	RC init_st_cust(char * name, u_int64_t name_len);
+	RC init_table_st(char * file_path, char * table_name, u_int32_t name_size, u_int32_t f_cnt, u_int32_t table_size);
 
 	table_t * 		t_warehouse;
 	table_t * 		t_district;
@@ -59,7 +57,7 @@ public:
 private:
 	uint64_t num_wh;
 	void init_tab_item();
-	void init_tab_wh(uint32_t wid);
+	void init_tab_wh(uint64_t wid);
 	void init_tab_dist(uint64_t w_id);
 	void init_tab_stock(uint64_t w_id);
 	void init_tab_cust(uint64_t d_id, uint64_t w_id);

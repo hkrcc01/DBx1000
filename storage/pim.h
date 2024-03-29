@@ -34,9 +34,13 @@ public:
 
     void init_table_size(u_int32_t row_cnt);
 
-    void insert_tuple(void ** data, u_int64_t &index);
-    void detla_update_and_invalid(u_int64_t version_id, u_int64_t storage_index);
-    void insert_detla(u_int64_t storage_index, u_int64_t version_id, row_t * r);
+    void insert_tuple(void ** data, u_int32_t &index);
+    void detla_update_and_invalid(u_int32_t version_id, u_int32_t storage_index);
+    void insert_detla(u_int32_t storage_index, u_int32_t version_id, row_t * r);
+
+    void print_line(u_int32_t line_index);
+
+    void get_value(u_int32_t field_index, u_int32_t row_index, void * &value);
 
     char * name;
 

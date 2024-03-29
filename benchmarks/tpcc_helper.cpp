@@ -112,6 +112,98 @@ uint64_t MakeNumberString(int min, int max, char* str, uint64_t thd_id) {
   return cnt;
 }
 
+u_int32_t *** GetAllocArr(char * table_name, char * file_path,  u_int32_t &bank_cnt, u_int32_t &col, char type) {
+
+  u_int32_t row;
+  u_int32_t eles_cnt = 0;
+  
+  FILE *file;
+  char line[5000];
+  u_int32_t data[5000];
+
+  file = fopen(file_path, "r");
+  if (file == NULL) {
+    assert(false);
+  }
+
+  while (fgets(line, sizeof(line), file)) {
+
+    u_int32_t index = 0;
+    char *token = strtok(line, " ");
+
+    while (table_name[index] != '\0' && token[index] != '\0') {
+      if (table_name[index] != token[index]) break;
+      index++;
+    }
+
+    // this table is not matched
+    if (table_name[index] != '\0' || token[index] != '\0')
+      continue;
+    token = strtok(NULL, " ");
+
+    if (type != token[0]) 
+      continue;
+    token = strtok(NULL, " ");
+
+    sscanf(token, "%d", &bank_cnt);
+    token = strtok(NULL, " ");
+
+    sscanf(token, "%d", &row);
+    token = strtok(NULL, " ");
+
+    sscanf(token, "%d", &col);
+    token = strtok(NULL, " ");
+
+    while (token != NULL) {
+      sscanf(token, "%d", &data[eles_cnt++]);  // 将字符串转换为整数
+      token = strtok(NULL, " ");
+    }
+    break;
+  }
+
+  eles_cnt = 0;
+  u_int32_t ***dynamic = new u_int32_t **[bank_cnt];
+
+	for (u_int32_t i = 0; i < bank_cnt; ++i) {
+    dynamic[i] = new u_int32_t *[row];
+    for (u_int32_t j = 0; j < row; ++j) {
+      dynamic[i][j] = new u_int32_t[col];
+      for (u_int32_t k = 0; k < col; ++k) {
+        dynamic[i][j][k] = data[eles_cnt++];  // 复制数据
+      }
+    }
+  }
+
+#if TABLE_INIT_DEBUG
+
+  printf("<====");
+  for (int index = 0; table_name[index] != '\0'; index++) {
+    printf("%c", table_name[index]);
+  }
+  if (type == '1') {
+    printf("_INDEX");
+  } else {
+    printf("_WIDTH");
+  }
+  printf("====>\r\n");
+
+  for (u_int32_t i = 0; i < bank_cnt; ++i) {
+    printf("{");
+    for (u_int32_t j = 0; j < row; ++j) {
+      printf("{");
+      for (u_int32_t k = 0; k < col; ++k) {
+        printf("%d,", dynamic[i][j][k]);
+      }
+      printf("},");
+    }
+    printf("},");
+  }
+  printf("\r\n");
+#endif
+
+  return dynamic;
+}
+
 uint64_t wh_to_part(uint64_t wid) {
 	assert(g_part_cnt <= g_num_wh);
 	return wid % g_part_cnt;

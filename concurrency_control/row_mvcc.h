@@ -32,7 +32,7 @@ public:
 	void init(row_t * row);
 	RC access(txn_man * txn, TsType type, row_t * row);
 #if DETLA_STORAGE_ENABLE && PIM_ENABLE
-	void init_detla_buffer(u_int64_t index, table_s * t);
+	void init_detla_buffer(u_int32_t index, table_s * t);
 #endif
 private:
  	pthread_mutex_t * latch;
@@ -50,7 +50,7 @@ private:
 	ts_t			_oldest_wts;
 	WriteHisEntry * _write_history;
 #if DETLA_STORAGE_ENABLE && PIM_ENABLE
-	u_int64_t		_index_of_storage;
+	u_int32_t		_index_of_storage;
 	table_s *		_table;
 #endif
 	// the following is a small optimization.

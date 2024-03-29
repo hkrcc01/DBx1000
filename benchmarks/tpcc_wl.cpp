@@ -67,20 +67,59 @@ RC tpcc_wl::init_table() {
 /**********************************/
 
 #if PIM_ENABLE
+
+#if TPCC_SMALL
+	char file_path[] = "./tools/mem_alloc/tpcc_short_allocs.txt";
+#elif
+	char file_path[] = "./tools/mem_alloc/tpcc_full_allocs.txt";
+#endif
+
+	char cmd[100] = "python3 ./tools/mem_alloc/main4.py";
+	char para[] = " -dn ";
+	strcat(cmd, para);
+
+	char devices_cnt[5];
+	snprintf(devices_cnt, sizeof(devices_cnt), "%d", DEVICE_CNT_PER_BANK);
+	strcat(cmd, devices_cnt);
+
+	int returnCode = system(cmd);
+
+    if (returnCode == -1) {
+		assert(false);
+    }
+
 	u_int32_t tables_cnt = 6;
 	this->st = new storage();
 	// there are 6 tables
 	st->init(tables_cnt);
 
 	init_table_size();
-	init_st_wh();
-	init_st_item();
-	init_st_dist();
-	init_st_stock();
+
+	char wh[] = "WAREHOUSE"; 
+	init_table_st(file_path, wh, 10, 9, this->l_warehouse);
+	char item[] = "ITEM";
+	init_table_st(file_path, item, 5, 5, this->l_item);
+	char dist[] = "DISTRICT";
+	init_table_st(file_path, dist, 9, 11, this->l_district);
+	char stock[] = "STOCK";
 	char last[] = "CUSTOMER_LAST"; 
 	char id[] = "CUSTOMER_ID";
-	init_st_cust(last, 14);
-	init_st_cust(id, 12);
+#if TPCC_SMALL
+	init_table_st(file_path, stock, 5, 4, this->l_stock);
+	init_table_st(file_path, last, 14, 11, this->l_customer);
+	init_table_st(file_path, id, 12, 11, this->l_customer);
+#else
+	init_table_st(file_path, stock, 5, 17, this->l_stock);
+	init_table_st(file_path, last, 14, 21, this->l_customer);
+	init_table_st(file_path, id, 12, 21, this->l_customer);
+#endif
+
+	// init_st_wh();
+	// init_st_item();
+	// init_st_dist();
+	// init_st_stock();
+	// init_st_cust(last, 14);
+	// init_st_cust(id, 12);
 #endif
 
 	tpcc_buffer = new drand48_data * [g_num_wh];
@@ -106,274 +145,19 @@ RC tpcc_wl::init_table_size() {
 	return RCOK;
 }
 
-RC tpcc_wl::init_st_wh() {
-	u_int32_t row;
-	u_int32_t col;
+RC tpcc_wl::init_table_st(char * file_path, char * table_name, u_int32_t name_size, u_int32_t f_cnt, u_int32_t table_size) {
+
 	u_int32_t bank_cnt;
-	u_int32_t f_cnt = 9;
-
-	bank_cnt = 1;
-	row = DEVICE_CNT_PER_BANK;
-	col = 3;
-	char name[] = "WAREHOUSE";
-	u_int32_t wh_i[bank_cnt][row][col] = {{{5,0,0},{5,4,0},{4,3,0},{3,0,0},{3,2,0},{7,9,0},{9,8,1},{1,6,0}}};
-	u_int32_t wh_w[bank_cnt][row][col] = {{{14,0,0},{6,8,0},{12,2,0},{14,0,0},{4,10,0},{9,5,0},{3,8,3},{5,2,0}}};
-
-	// 创建三级指针结构
-    u_int32_t ***dynamic_wh_i = new u_int32_t **[bank_cnt];
-	for (u_int32_t i = 0; i < bank_cnt; ++i) {
-        dynamic_wh_i[i] = new u_int32_t *[row];
-        for (u_int32_t j = 0; j < row; ++j) {
-            dynamic_wh_i[i][j] = new u_int32_t[col];
-            for (u_int32_t k = 0; k < col; ++k) {
-                dynamic_wh_i[i][j][k] = wh_i[i][j][k];  // 复制数据
-            }
-        }
-    }
-
-	// 创建三级指针结构
-    u_int32_t ***dynamic_wh_w = new u_int32_t **[bank_cnt];
-	for (u_int32_t i = 0; i < bank_cnt; ++i) {
-        dynamic_wh_w[i] = new u_int32_t *[row];
-        for (u_int32_t j = 0; j < row; ++j) {
-            dynamic_wh_w[i][j] = new u_int32_t[col];
-            for (u_int32_t k = 0; k < col; ++k) {
-                dynamic_wh_w[i][j][k] = wh_w[i][j][k];  // 复制数据
-            }
-        }
-    }
-
-	table_s * t = st->insert_table(name, sizeof(name) / sizeof(name[0]), dynamic_wh_i, dynamic_wh_w, bank_cnt, row, col, f_cnt);
-	t->init_table_size(this->l_warehouse);
-
-	// 释放内存
-	free_arr(dynamic_wh_i, bank_cnt, row);
-	free_arr(dynamic_wh_w, bank_cnt, row);
-
-#if PIM_INIT_DEBUG
-	printf("debug log:\r\n");
-	printf("<=========table of warehouse=========>\r\n");
-	u_int32_t device_width = 14;
-	assert(t->fields_cnt == f_cnt);
-	assert(t->parts[0]->width == device_width);
-	for (u_int32_t f = 0; f < t->fields_cnt; f++) {
-		u_int32_t part_sum = 0;
-		for (u_int32_t fc = 0; fc < t->fields[f]->cnt; fc++) {
-			part_sum += t->fields[f]->sizes[fc];
-		}
-		printf("%d ", part_sum);
-	}
-	printf("\r\ndebug end\r\n");
-#endif
-
-	return RCOK;
-}
-
-RC tpcc_wl::init_st_item() {
-	u_int32_t row;
+	u_int32_t row = DEVICE_CNT_PER_BANK;
 	u_int32_t col;
-	u_int32_t bank_cnt;
-	u_int32_t f_cnt = 5;
+	u_int32_t *** wh_i = GetAllocArr(table_name, file_path, bank_cnt, col, '1');
+	u_int32_t *** wh_w = GetAllocArr(table_name, file_path, bank_cnt, col, '0');
 
-	bank_cnt = 2;
-	row = DEVICE_CNT_PER_BANK;
-	col = 2;
-	char name[] = "ITEM";
-	u_int32_t wh_i[bank_cnt][row][col] = {{{4,0},{1,0},{5,0},{5,0},{5,0},{5,0},{5,0},{5,0}},{{3,0},{3,0},{3,0},{3,0},{3,2},{2,0},{2,5},{0,0}}};
-	u_int32_t wh_w[bank_cnt][row][col] = {{{8,0},{8,0},{8,0},{8,0},{8,0},{8,0},{8,0},{8,0}},{{5,0},{5,0},{5,0},{5,0},{4,1},{5,0},{2,2},{0,0}}};
+	table_s * t = st->insert_table(table_name, name_size, wh_i, wh_w, bank_cnt, row, col, f_cnt);
+	t->init_table_size(table_size);
 
-	// 创建三级指针结构
-    u_int32_t ***dynamic_item_i = new u_int32_t **[bank_cnt];
-	for (u_int32_t i = 0; i < bank_cnt; ++i) {
-        dynamic_item_i[i] = new u_int32_t *[row];
-        for (u_int32_t j = 0; j < row; ++j) {
-            dynamic_item_i[i][j] = new u_int32_t[col];
-            for (u_int32_t k = 0; k < col; ++k) {
-                dynamic_item_i[i][j][k] = wh_i[i][j][k];  // 复制数据
-            }
-        }
-    }
-
-	// 创建三级指针结构
-    u_int32_t ***dynamic_item_w = new u_int32_t **[bank_cnt];
-	for (u_int32_t i = 0; i < bank_cnt; ++i) {
-        dynamic_item_w[i] = new u_int32_t *[row];
-        for (u_int32_t j = 0; j < row; ++j) {
-            dynamic_item_w[i][j] = new u_int32_t[col];
-            for (u_int32_t k = 0; k < col; ++k) {
-                dynamic_item_w[i][j][k] = wh_w[i][j][k];  // 复制数据
-            }
-        }
-    }
-
-	table_s * t = st->insert_table(name, sizeof(name) / sizeof(name[0]), dynamic_item_i, dynamic_item_w, bank_cnt, row, col, f_cnt);
-	t->init_table_size(this->l_item);
-
-	// 释放内存
-	free_arr(dynamic_item_i, bank_cnt, row);
-	free_arr(dynamic_item_w, bank_cnt, row);
-
-	return RCOK;
-}
-
-RC tpcc_wl::init_st_dist() {
-	u_int32_t row;
-	u_int32_t col;
-	u_int32_t bank_cnt;
-	u_int32_t f_cnt = 11;
-
-	bank_cnt = 1;
-	row = DEVICE_CNT_PER_BANK;
-	col = 3;
-	char name[] = "DISTRICT";
-	u_int32_t wh_i[bank_cnt][row][col] = {{{6,0,0},{6,5,0},{5,4,0},{4,3,0},{3,8,11},{11,10,9},{9,2,1},{1,7,0}}};
-	u_int32_t wh_w[bank_cnt][row][col] = {{{16,0,0},{4,12,0},{8,8,0},{12,4,0},{6,9,1},{7,8,1},{7,8,1},{7,2,0}}};
-
-	// 创建三级指针结构
-    u_int32_t ***dynamic_dist_i = new u_int32_t **[bank_cnt];
-	for (u_int32_t i = 0; i < bank_cnt; ++i) {
-        dynamic_dist_i[i] = new u_int32_t *[row];
-        for (u_int32_t j = 0; j < row; ++j) {
-            dynamic_dist_i[i][j] = new u_int32_t[col];
-            for (u_int32_t k = 0; k < col; ++k) {
-                dynamic_dist_i[i][j][k] = wh_i[i][j][k];  // 复制数据
-            }
-        }
-    }
-
-	// 创建三级指针结构
-    u_int32_t ***dynamic_dist_w = new u_int32_t **[bank_cnt];
-	for (u_int32_t i = 0; i < bank_cnt; ++i) {
-        dynamic_dist_w[i] = new u_int32_t *[row];
-        for (u_int32_t j = 0; j < row; ++j) {
-            dynamic_dist_w[i][j] = new u_int32_t[col];
-            for (u_int32_t k = 0; k < col; ++k) {
-                dynamic_dist_w[i][j][k] = wh_w[i][j][k];  // 复制数据
-            }
-        }
-    }
-
-	table_s * t = st->insert_table(name, sizeof(name) / sizeof(name[0]), dynamic_dist_i, dynamic_dist_w, bank_cnt, row, col, f_cnt);
-	t->init_table_size(this->l_district);
-
-	// 释放内存
-	free_arr(dynamic_dist_i, bank_cnt, row);
-	free_arr(dynamic_dist_w, bank_cnt, row);
-
-	return RCOK;
-}
-
-RC tpcc_wl::init_st_stock() {
-	u_int32_t row;
-	u_int32_t col;
-	u_int32_t bank_cnt;
-
-	char name[] = "STOCK";
-#if TPCC_SMALL
-	bank_cnt = 1;
-	row = DEVICE_CNT_PER_BANK;
-	col = 1;
-
-	u_int32_t f_cnt = 4;
-	u_int32_t wh_i[bank_cnt][row][col] = {{{2},{1},{4},{3},{0},{0},{0},{0}}};
-	u_int32_t wh_w[bank_cnt][row][col] = {{{8},{8},{8},{8},{0},{0},{0},{0}}};
-#else
-	bank_cnt = 2;
-	row = DEVICE_CNT_PER_BANK;
-	col = 5;
-
-	u_int32_t f_cnt = 17;
-	u_int32_t wh_i[bank_cnt][row][col] = {{{2,0,0,0,0},{1,0,0,0,0},{17,0,0,0,0},{17,0,0,0,0},{17,0,0,0,0},{17,0,0,0,0},{17,0,0,0,0},{17,0,0,0,0}},{{9,13,0,0,0},{13,12,0,0,0},{12,11,10,0,0},{10,8,0,0,0},{8,7,6,0,0},{6,5,0,0,0},{5,4,3,0,0},{3,15,14,16,17}}};
-	u_int32_t wh_w[bank_cnt][row][col] = {{{8,0,0,0,0},{8,0,0,0,0},{8,0,0,0,0},{8,0,0,0,0},{8,0,0,0,0},{8,0,0,0,0},{8,0,0,0,0},{8,0,0,0,0}},{{24,11,0,0,0},{13,22,0,0,0},{2,24,9,0,0},{15,20,0,0,0},{4,24,7,0,0},{17,18,0,0,0},{6,24,5,0,0},{3,8,8,8,2}}};
-#endif
-	// 创建三级指针结构
-    u_int32_t ***dynamic_stock_i = new u_int32_t **[bank_cnt];
-	for (u_int32_t i = 0; i < bank_cnt; ++i) {
-        dynamic_stock_i[i] = new u_int32_t *[row];
-        for (u_int32_t j = 0; j < row; ++j) {
-            dynamic_stock_i[i][j] = new u_int32_t[col];
-            for (u_int32_t k = 0; k < col; ++k) {
-                dynamic_stock_i[i][j][k] = wh_i[i][j][k];  // 复制数据
-            }
-        }
-    }
-
-	// 创建三级指针结构
-    u_int32_t ***dynamic_stock_w = new u_int32_t **[bank_cnt];
-	for (u_int32_t i = 0; i < bank_cnt; ++i) {
-        dynamic_stock_w[i] = new u_int32_t *[row];
-        for (u_int32_t j = 0; j < row; ++j) {
-            dynamic_stock_w[i][j] = new u_int32_t[col];
-            for (u_int32_t k = 0; k < col; ++k) {
-                dynamic_stock_w[i][j][k] = wh_w[i][j][k];  // 复制数据
-            }
-        }
-    }
-
-	table_s * t = st->insert_table(name, sizeof(name) / sizeof(name[0]), dynamic_stock_i, dynamic_stock_w, bank_cnt, row, col, f_cnt);
-	t->init_table_size(this->l_stock);
-
-	// 释放内存
-	free_arr(dynamic_stock_i, bank_cnt, row);
-	free_arr(dynamic_stock_w, bank_cnt, row);
-
-	return RCOK;
-}
-
-RC tpcc_wl::init_st_cust(char * name, u_int64_t name_len) {
-	u_int32_t row;
-	u_int32_t col;
-	u_int32_t bank_cnt;
-#if TPCC_SMALL
-	u_int32_t f_cnt = 11;
-
-	bank_cnt = 2;
-	row = DEVICE_CNT_PER_BANK;
-	col = 3;
-
-	u_int32_t wh_i[bank_cnt][row][col] = {{{5,0,0},{9,3,0},{2,1,0},{11,10,0},{8,7,4},{0,0,0},{0,0,0},{0,0,0}},{{6,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0}}};
-	u_int32_t wh_w[bank_cnt][row][col] = {{{16,0,0},{8,8,0},{8,8,0},{8,8,0},{8,2,2},{0,0,0},{0,0,0},{0,0,0}},{{2,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0}}};
-#else
-	u_int32_t f_cnt = 21;
-
-	bank_cnt = 3;
-	row = DEVICE_CNT_PER_BANK;
-	col = 10;
-
-	u_int32_t wh_i[bank_cnt][row][col] = {{{9,0,0,0,0,0,0,0,0,0},{12,21,0,0,0,0,0,0,0,0},{6,21,0,0,0,0,0,0,0,0},{17,3,21,0,0,0,0,0,0,0},{2,1,21,0,0,0,0,0,0,0},{21,0,0,0,0,0,0,0,0,0},{21,0,0,0,0,0,0,0,0,0},{21,0,0,0,0,0,0,0,0,0}},{{10,0,0,0,0,0,0,0,0,0},{21,0,0,0,0,0,0,0,0,0},{21,0,0,0,0,0,0,0,0,0},{21,0,0,0,0,0,0,0,0,0},{21,0,0,0,0,0,0,0,0,0},{21,0,0,0,0,0,0,0,0,0},{21,0,0,0,0,0,0,0,0,0},{21,0,0,0,0,0,0,0,0,0}},{{21,0,0,0,0,0,0,0,0,0},{21,0,0,0,0,0,0,0,0,0},{21,0,0,0,0,0,0,0,0,0},{21,0,0,0,0,0,0,0,0,0},{21,0,0,0,0,0,0,0,0,0},{21,0,0,0,0,0,0,0,0,0},{21,8,7,4,0,0,0,0,0,0},{4,11,16,15,13,20,18,19,14,5}}};
-	u_int32_t wh_w[bank_cnt][row][col] = {{{20,0,0,0,0,0,0,0,0,0},{16,4,0,0,0,0,0,0,0,0},{16,4,0,0,0,0,0,0,0,0},{8,8,4,0,0,0,0,0,0,0},{8,8,4,0,0,0,0,0,0,0},{20,0,0,0,0,0,0,0,0,0},{20,0,0,0,0,0,0,0,0,0},{20,0,0,0,0,0,0,0,0,0}},{{2,0,0,0,0,0,0,0,0,0},{2,0,0,0,0,0,0,0,0,0},{2,0,0,0,0,0,0,0,0,0},{2,0,0,0,0,0,0,0,0,0},{2,0,0,0,0,0,0,0,0,0},{2,0,0,0,0,0,0,0,0,0},{2,0,0,0,0,0,0,0,0,0},{2,0,0,0,0,0,0,0,0,0}},{{66,0,0,0,0,0,0,0,0,0},{66,0,0,0,0,0,0,0,0,0},{66,0,0,0,0,0,0,0,0,0},{66,0,0,0,0,0,0,0,0,0},{66,0,0,0,0,0,0,0,0,0},{66,0,0,0,0,0,0,0,0,0},{14,20,20,12,0,0,0,0,0,0},{4,9,8,8,8,8,8,8,2,2}}};
-#endif
-	// 创建三级指针结构
-    u_int32_t ***dynamic_cust_i = new u_int32_t **[bank_cnt];
-	for (u_int32_t i = 0; i < bank_cnt; ++i) {
-        dynamic_cust_i[i] = new u_int32_t *[row];
-        for (u_int32_t j = 0; j < row; ++j) {
-            dynamic_cust_i[i][j] = new u_int32_t[col];
-            for (u_int32_t k = 0; k < col; ++k) {
-                dynamic_cust_i[i][j][k] = wh_i[i][j][k];  // 复制数据
-            }
-        }
-    }
-
-	// 创建三级指针结构
-    u_int32_t ***dynamic_cust_w = new u_int32_t **[bank_cnt];
-	for (u_int32_t i = 0; i < bank_cnt; ++i) {
-        dynamic_cust_w[i] = new u_int32_t *[row];
-        for (u_int32_t j = 0; j < row; ++j) {
-            dynamic_cust_w[i][j] = new u_int32_t[col];
-            for (u_int32_t k = 0; k < col; ++k) {
-                dynamic_cust_w[i][j][k] = wh_w[i][j][k];  // 复制数据
-            }
-        }
-    }
-
-	table_s * t = st->insert_table(name, name_len, dynamic_cust_i, dynamic_cust_w, bank_cnt, row, col, f_cnt);
-	t->init_table_size(this->l_customer);
-
-	// 释放内存
-	free_arr(dynamic_cust_i, bank_cnt, row);
-	free_arr(dynamic_cust_w, bank_cnt, row);
-
+	free_arr(wh_i, bank_cnt, row);
+	free_arr(wh_w, bank_cnt, row);
 	return RCOK;
 }
 
@@ -400,6 +184,9 @@ RC tpcc_wl::get_txn_man(txn_man *& txn_manager, thread_t * h_thd) {
 // TODO ITEM table is assumed to be in partition 0
 void tpcc_wl::init_tab_item() {
 	void ** data = new void*[5];
+#if TABLE_INIT_DEBUG
+	bool flag = true;
+#endif
 	for (UInt32 i = 1; i <= g_max_items; i++) {
 		row_t * row;
 		uint64_t row_id;
@@ -430,7 +217,7 @@ void tpcc_wl::init_tab_item() {
 		data[idx++] = i_data;
 
 		table_s * t;
-		u_int64_t storage_index = 0;
+		u_int32_t storage_index;
 		char t_n[] = "ITEM";
 
 		st->get_table(t_n, t);
@@ -439,14 +226,23 @@ void tpcc_wl::init_tab_item() {
 #if DETLA_STORAGE_ENABLE
 		row->init_detla_buffer(storage_index, t);
 #endif
+#if TABLE_INIT_DEBUG
+		if (flag) {
+			t->print_line(storage_index);
+			flag = false;
+		}
+#endif
 #endif
 	}
 	delete[] data;
 }
 
-void tpcc_wl::init_tab_wh(uint32_t wid) {
+void tpcc_wl::init_tab_wh(uint64_t wid) {
 	void ** data = new void*[9];
 	assert(wid >= 1 && wid <= g_num_wh);
+#if TABLE_INIT_DEBUG
+	bool flag = true;
+#endif
 	row_t * row;
 	uint64_t row_id;
 	t_warehouse->get_new_row(row, 0, row_id);
@@ -489,7 +285,7 @@ void tpcc_wl::init_tab_wh(uint32_t wid) {
 	data[idx++] = &w_ytd;
 
 	table_s * t;
-	u_int64_t storage_index;
+	u_int32_t storage_index;
 	char t_n[] = "WAREHOUSE";
 
 	st->get_table(t_n, t);
@@ -498,6 +294,14 @@ void tpcc_wl::init_tab_wh(uint32_t wid) {
 #if DETLA_STORAGE_ENABLE
 	row->init_detla_buffer(storage_index, t);
 #endif
+#if TABLE_INIT_DEBUG
+	if (flag) {
+		t->print_line(storage_index);
+		flag = false;
+	}
+	// void * value = _mm_malloc(500, 1);
+	// t->get_value(0, 0, value);
+#endif
 #endif
 	delete[] data;
 	return;
@@ -505,6 +309,9 @@ void tpcc_wl::init_tab_wh(uint32_t wid) {
 
 void tpcc_wl::init_tab_dist(uint64_t wid) {
 	void ** data = new void*[11];
+#if TABLE_INIT_DEBUG
+	bool flag = true;
+#endif
 	for (uint64_t did = 1; did <= DIST_PER_WARE; did++) {
 		row_t * row;
 		uint64_t row_id;
@@ -553,7 +360,7 @@ void tpcc_wl::init_tab_dist(uint64_t wid) {
 		data[idx++] = &d_next_o_id;
 
 		table_s * t;
-		u_int64_t storage_index;
+		u_int32_t storage_index;
 		char t_n[] = "DISTRICT";
 
 		st->get_table(t_n, t);
@@ -562,6 +369,12 @@ void tpcc_wl::init_tab_dist(uint64_t wid) {
 #if DETLA_STORAGE_ENABLE
 		row->init_detla_buffer(storage_index, t);
 #endif
+#if TABLE_INIT_DEBUG
+		if (flag) {
+			t->print_line(storage_index);
+			flag = false;
+		}
+#endif
 #endif
 	}
 	delete[] data;
@@ -569,6 +382,9 @@ void tpcc_wl::init_tab_dist(uint64_t wid) {
 
 void tpcc_wl::init_tab_stock(uint64_t wid) {
 	void ** data = new void*[17];
+#if TABLE_INIT_DEBUG
+	bool flag = true;
+#endif
 	for (UInt32 sid = 1; sid <= g_max_items; sid++) {
 		row_t * row;
 		uint64_t row_id;
@@ -624,7 +440,7 @@ void tpcc_wl::init_tab_stock(uint64_t wid) {
 		data[idx++] = s_data;
 #endif
 		table_s * t;
-		u_int64_t storage_index;
+		u_int32_t storage_index;
 		char t_n[] = "STOCK";
 
 		st->get_table(t_n, t);
@@ -632,6 +448,12 @@ void tpcc_wl::init_tab_stock(uint64_t wid) {
 
 #if DETLA_STORAGE_ENABLE
 		row->init_detla_buffer(storage_index, t);
+#endif
+#if TABLE_INIT_DEBUG
+		if (flag) {
+			t->print_line(storage_index);
+			flag = false;
+		}
 #endif
 #endif
 	}
@@ -641,6 +463,9 @@ void tpcc_wl::init_tab_stock(uint64_t wid) {
 void tpcc_wl::init_tab_cust(uint64_t did, uint64_t wid) {
 	void ** data = new void*[21];
 	assert(g_cust_per_dist >= 1000);
+#if TABLE_INIT_DEBUG
+	bool flag = true;
+#endif
 	for (UInt32 cid = 1; cid <= g_cust_per_dist; cid++) {
 		row_t * row;
 		uint64_t row_id;
@@ -757,8 +582,8 @@ void tpcc_wl::init_tab_cust(uint64_t did, uint64_t wid) {
 
 		table_s * t_last;
 		table_s * t_id;
-		u_int64_t storage_index_last;
-		u_int64_t storage_index_id;
+		u_int32_t storage_index_last;
+		u_int32_t storage_index_id;
 		char t_n_last[] = "CUSTOMER_LAST";
 		char t_n_id[] = "CUSTOMER_ID";
 
@@ -772,6 +597,13 @@ void tpcc_wl::init_tab_cust(uint64_t did, uint64_t wid) {
 #if DETLA_STORAGE_ENABLE
 		row->init_detla_buffer(storage_index_last, t_last);
 		row->init_detla_buffer(storage_index_id, t_id);
+#endif
+#if TABLE_INIT_DEBUG
+		if (flag) {
+			t_last->print_line(storage_index_last);
+			t_id->print_line(storage_index_id);
+			flag = false;
+		}
 #endif
 #endif
 	}
@@ -890,9 +722,9 @@ void * tpcc_wl::threadInitWarehouse(void * This) {
 	assert((uint64_t)tid < g_num_wh);
 	srand48_r(wid, tpcc_buffer[tid]);
 	
+	wl->init_tab_wh( wid );
 	if (tid == 0)
 		wl->init_tab_item();
-	wl->init_tab_wh( wid );
 	wl->init_tab_dist( wid );
 	wl->init_tab_stock( wid );
 	for (uint64_t did = 1; did <= DIST_PER_WARE; did++) {

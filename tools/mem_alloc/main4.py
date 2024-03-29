@@ -1,7 +1,6 @@
 import numpy as np
-
-device_num = 8
-key_col_thresh = 0.3
+import os
+import argparse
 
 important_keys = ["c_id", "c_d_id", "c_w_id", "c_last", "c_city", "c_state", "c_phone", "c_balance", "c_n_nationkey",
                     "no_o_id", "no_d_id", "no_w_id",
@@ -23,7 +22,7 @@ class Table:
         self.keys.append(name)
         self.items[name] = length
 
-def add_zero_element(arr, value):
+def add_filling_element(arr, value):
 
     max_size = 0;
     for e1 in arr:
@@ -39,7 +38,8 @@ def add_zero_element(arr, value):
     return arr
 
 
-def print_alloc(tab):
+def allocate(tab):
+
     col_widths = [tab.items[x] for x in tab.keys]
     col_widths_sort = np.argsort(col_widths)
     
@@ -129,55 +129,59 @@ def print_alloc(tab):
     
     # print('col width:', col_widths)
                     
-    # device_col_map = add_zero_element(device_col_map, -1)
-    # device_col_width = add_zero_element(device_col_width, 0)
+    device_col_map = add_filling_element(device_col_map, -1)
+    device_col_width = add_filling_element(device_col_width, 0)
 
-    print("table name:", tab.name, end=' ')
-    print('column width: ', end=' ')
-    print('[', end='')
-    for i in range(len(col_widths)):
-        print(col_widths[i], end='')
-        if tab.keys[i] in important_keys:
-            print('*', end='')
-        print(', ', end='')
-    print(']')
+    # # print original table fields size and important key
+    # print("table name:", tab.name, end=' ')
+    # print('column width: ', end=' ')
+    # print('[', end='')
+    # for i in range(len(col_widths)):
+    #     print(col_widths[i], end='')
+    #     if tab.keys[i] in important_keys:
+    #         print('*', end='')
+    #     print(', ', end='')
+    # print(']')
     
-    print("table column mapped to device:", device_col_map)
+    # # print layout of table allocation
+    # print("table column mapped to device:", device_col_map)
 
-    print('{', end='')
-    for devices in device_col_map:
-        print('{', end='')
-        for indexs in devices:
-            print('{', end='')
-            for i in range(len(indexs)-1):
-                print(indexs[i]+1, end=',')
-            if len(indexs) > 0:
-                print(indexs[-1]+1, end='')
-            print('},', end='')
-        print('},', end='')
-    print('}')
+    # print('{', end='')
+    # for devices in device_col_map:
+    #     print('{', end='')
+    #     for indexs in devices:
+    #         print('{', end='')
+    #         for i in range(len(indexs)-1):
+    #             print(indexs[i]+1, end=',')
+    #         if len(indexs) > 0:
+    #             print(indexs[-1]+1, end='')
+    #         print('},', end='')
+    #     print('},', end='')
+    # print('}')
 
-    print("bytes mapped to this device", device_col_width)
+    # print("bytes mapped to this device", device_col_width)
 
-    print('{', end='')
-    for devices in device_col_width:
-        print('{', end='')
-        for indexs in devices:
-            print('{', end='')
-            for i in range(len(indexs)-1):
-                print(indexs[i], end=',')
-            if len(indexs) > 0:
-                print(indexs[-1], end='')
-            print('},', end='')
-        print('},', end='')
-    print('}')
+    # print('{', end='')
+    # for devices in device_col_width:
+    #     print('{', end='')
+    #     for indexs in devices:
+    #         print('{', end='')
+    #         for i in range(len(indexs)-1):
+    #             print(indexs[i], end=',')
+    #         if len(indexs) > 0:
+    #             print(indexs[-1], end='')
+    #         print('},', end='')
+    #     print('},', end='')
+    # print('}')
 
-    print("usage: ", utilization)
-    if round_key_width:
-        pim_usage = total_key_width / round_key_width
-        print("pim_usage: ", pim_usage)
+    # # print utilization and pim usage
+    # print("usage: ", utilization)
+    # if round_key_width:
+    #     pim_usage = total_key_width / round_key_width
+    #     print("pim_usage: ", pim_usage)
     
-    print("\r\n")
+    # print("\r\n")
+    return (device_col_map, device_col_width)
 
 def schema_reader(file_name):
 
@@ -195,13 +199,70 @@ def schema_reader(file_name):
 
     return tables
 
-def main():
-    full_name = 'TPCC_full_schema.txt'
-    short_name = 'TPCC_short_schema.txt'
-    tables = schema_reader(short_name)
+def schema_writer(file_path, name, map, type):
+
+    with open(file_path, 'a') as file:
+        file.write(name[:-1] + ' ')
+        file.write(str(type) + ' ')
+        file.write(str(len(map)) + ' ')
+        file.write(str(len(map[0])) + ' ')
+        file.write(str(len(map[0][0])) + ' ')
+
+        for banks in map:
+            for devices in banks:
+                for value in devices:
+                    file.write(str(value + type) + ' ')
+        file.write('\r\n')
+
+def write_tables(file_path, tables):
+
+    if os.path.exists(file_path):
+        os.remove(file_path)
 
     for table in tables:
-        print_alloc(table)
+        if table.name[0] == 'O' or table.name[0] == 'N':
+            continue
+        map, width = allocate(table)
+        if table.name[:-1] == 'CUSTOMER':
+            schema_writer(file_path, 'CUSTOMER_LAST\n', map, 1)
+            schema_writer(file_path, 'CUSTOMER_LAST\n', width, 0)
+            schema_writer(file_path, 'CUSTOMER_ID\n', map, 1)
+            schema_writer(file_path, 'CUSTOMER_ID\n', width, 0)
+        else:
+            schema_writer(file_path, table.name, map, 1)
+            schema_writer(file_path, table.name, width, 0)
+
+
+def set_args():
+    global device_num
+    global key_col_thresh
+
+    parser = argparse.ArgumentParser(description="arguments")
+    
+    parser.add_argument("-dn", type=int, default=8, help="device num")
+    # parser.add_argument("-s", type=str, default='f', help="table size")
+    parser.add_argument("-t", type=float, default=0.3, help="key coloum thresh")
+
+    args = parser.parse_args()
+
+    device_num = args.dn
+    key_col_thresh = args.t
+
+def main():
+
+    set_args()
+
+    full_schema = './tools/mem_alloc/tpcc_full_schema.txt'
+    short_schema = './tools/mem_alloc/tpcc_short_schema.txt'
+
+    full_path = './tools/mem_alloc/tpcc_full_allocs.txt'
+    short_path = './tools/mem_alloc/tpcc_short_allocs.txt'
+
+    full_tables = schema_reader(full_schema)
+    short_tables = schema_reader(short_schema)
+
+    write_tables(full_path, full_tables)
+    write_tables(short_path, short_tables)
 
 if __name__ == "__main__":
     main()

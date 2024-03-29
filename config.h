@@ -4,7 +4,7 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define THREAD_CNT					4
+#define THREAD_CNT					1
 #define PART_CNT					1 
 // each transaction only accesses 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
 #define VIRTUAL_PART_CNT			1
@@ -60,12 +60,13 @@
 #define BTREE_ORDER 				16
 
 // [ PIM ]
-#define PIM_ENABLE					false
+#define PIM_ENABLE					true
 #define RANK_CNT					4
 #define BANK_CNT_PER_RANK			4	// 4个bank
-#define DEVICE_CNT_PER_BANK			8	// 4个device
+#define DEVICE_CNT_PER_BANK			8	// 8个device
 #define VERSION_NUM					4	// MVCC版本的数量
-#define PIM_INIT_DEBUG				false // 初始化的debug
+#define TABLE_INIT_DEBUG			false // valid only if PIM_ENABLE == ture
+// #define TABLE_UPDATE_DEBUG			false // valid only if PIM_ENABLE == ture
 
 // [DL_DETECT] 
 #define DL_LOOP_DETECT				1000 	// 100 us
@@ -84,7 +85,7 @@
 // the history should be recycled.
 #define HIS_LEN						4
 #define REQ_LEN						4
-#define DETLA_STORAGE_ENABLE		true
+#define DETLA_STORAGE_ENABLE		true  // valid only if PIM_ENABLE == ture
 // #define HIS_RECYCLE_LEN			10
 // #define MAX_PRE_REQ				1024
 // #define MAX_READ_REQ				1024

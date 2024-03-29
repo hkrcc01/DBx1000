@@ -85,7 +85,7 @@ public:
 	void return_row(access_t type, txn_man * txn, row_t * row);
 
   #if DETLA_STORAGE_ENABLE && PIM_ENABLE
-	void init_detla_buffer(u_int64_t index, table_s * t);
+	void init_detla_buffer(u_int32_t index, table_s * t);
   #endif
 	
   #if CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE

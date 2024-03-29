@@ -2,3 +2,4 @@
 *.d
 rundb
 ./build
+./demo
