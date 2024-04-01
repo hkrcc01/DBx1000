@@ -185,6 +185,9 @@ INC_STATS(txn->get_thd_id(), debug4, t2 - t1);
 #if DETLA_STORAGE_ENABLE && PIM_ENABLE
 		_table->insert_detla(_index_of_storage, _prewrite_his_id, row);
 #endif
+#if TABLE_DETLA_DEBUG && PIM_ENABLE
+		_table->print_detla_line(_prewrite_his_id, _index_of_storage);
+#endif
 		update_buffer(txn, W_REQ);
 	} else if (type == XP_REQ) {
 		assert(row == _write_history[_prewrite_his_id].row);
@@ -231,8 +234,17 @@ row_t * Row_mvcc::reserveRow(ts_t ts, txn_man * txn) {
 			_row = _write_history[idx].row;
 			_write_history[idx].row = temp;
 			_oldest_wts = max_recycle_ts;
+#if TABLE_DATA_DEBUG && PIM_ENABLE
+			_table->print_line(_index_of_storage);
+#endif
 #if DETLA_STORAGE_ENABLE && PIM_ENABLE
 			_table->detla_update_and_invalid(idx, _index_of_storage);
+#endif
+#if TABLE_DATA_DEBUG && PIM_ENABLE
+			_table->print_line(_index_of_storage);
+#endif
+#if TABLE_DETLA_DEBUG && PIM_ENABLE
+			_table->print_detla_line(idx, _index_of_storage);
 #endif
 			for (uint32_t i = 0; i < _his_len; i++) {
 				if (_write_history[i].valid

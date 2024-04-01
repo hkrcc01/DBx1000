@@ -184,7 +184,7 @@ RC tpcc_wl::get_txn_man(txn_man *& txn_manager, thread_t * h_thd) {
 // TODO ITEM table is assumed to be in partition 0
 void tpcc_wl::init_tab_item() {
 	void ** data = new void*[5];
-#if TABLE_INIT_DEBUG
+#if TABLE_DATA_DEBUG
 	bool flag = true;
 #endif
 	for (UInt32 i = 1; i <= g_max_items; i++) {
@@ -226,7 +226,7 @@ void tpcc_wl::init_tab_item() {
 #if DETLA_STORAGE_ENABLE
 		row->init_detla_buffer(storage_index, t);
 #endif
-#if TABLE_INIT_DEBUG
+#if TABLE_DATA_DEBUG
 		if (flag) {
 			t->print_line(storage_index);
 			flag = false;
@@ -240,7 +240,7 @@ void tpcc_wl::init_tab_item() {
 void tpcc_wl::init_tab_wh(uint64_t wid) {
 	void ** data = new void*[9];
 	assert(wid >= 1 && wid <= g_num_wh);
-#if TABLE_INIT_DEBUG
+#if TABLE_DATA_DEBUG
 	bool flag = true;
 #endif
 	row_t * row;
@@ -294,7 +294,7 @@ void tpcc_wl::init_tab_wh(uint64_t wid) {
 #if DETLA_STORAGE_ENABLE
 	row->init_detla_buffer(storage_index, t);
 #endif
-#if TABLE_INIT_DEBUG
+#if TABLE_DATA_DEBUG
 	if (flag) {
 		t->print_line(storage_index);
 		flag = false;
@@ -309,7 +309,7 @@ void tpcc_wl::init_tab_wh(uint64_t wid) {
 
 void tpcc_wl::init_tab_dist(uint64_t wid) {
 	void ** data = new void*[11];
-#if TABLE_INIT_DEBUG
+#if TABLE_DATA_DEBUG
 	bool flag = true;
 #endif
 	for (uint64_t did = 1; did <= DIST_PER_WARE; did++) {
@@ -369,7 +369,7 @@ void tpcc_wl::init_tab_dist(uint64_t wid) {
 #if DETLA_STORAGE_ENABLE
 		row->init_detla_buffer(storage_index, t);
 #endif
-#if TABLE_INIT_DEBUG
+#if TABLE_DATA_DEBUG
 		if (flag) {
 			t->print_line(storage_index);
 			flag = false;
@@ -382,7 +382,7 @@ void tpcc_wl::init_tab_dist(uint64_t wid) {
 
 void tpcc_wl::init_tab_stock(uint64_t wid) {
 	void ** data = new void*[17];
-#if TABLE_INIT_DEBUG
+#if TABLE_DATA_DEBUG
 	bool flag = true;
 #endif
 	for (UInt32 sid = 1; sid <= g_max_items; sid++) {
@@ -449,7 +449,7 @@ void tpcc_wl::init_tab_stock(uint64_t wid) {
 #if DETLA_STORAGE_ENABLE
 		row->init_detla_buffer(storage_index, t);
 #endif
-#if TABLE_INIT_DEBUG
+#if TABLE_DATA_DEBUG
 		if (flag) {
 			t->print_line(storage_index);
 			flag = false;
@@ -463,7 +463,7 @@ void tpcc_wl::init_tab_stock(uint64_t wid) {
 void tpcc_wl::init_tab_cust(uint64_t did, uint64_t wid) {
 	void ** data = new void*[21];
 	assert(g_cust_per_dist >= 1000);
-#if TABLE_INIT_DEBUG
+#if TABLE_DATA_DEBUG
 	bool flag = true;
 #endif
 	for (UInt32 cid = 1; cid <= g_cust_per_dist; cid++) {
@@ -598,7 +598,7 @@ void tpcc_wl::init_tab_cust(uint64_t did, uint64_t wid) {
 		row->init_detla_buffer(storage_index_last, t_last);
 		row->init_detla_buffer(storage_index_id, t_id);
 #endif
-#if TABLE_INIT_DEBUG
+#if TABLE_DATA_DEBUG
 		if (flag) {
 			t_last->print_line(storage_index_last);
 			t_id->print_line(storage_index_id);

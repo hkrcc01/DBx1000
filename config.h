@@ -60,13 +60,13 @@
 #define BTREE_ORDER 				16
 
 // [ PIM ]
-#define PIM_ENABLE					true
+#define PIM_ENABLE					true// enable the pim storage
 #define RANK_CNT					4
-#define BANK_CNT_PER_RANK			4	// 4个bank
-#define DEVICE_CNT_PER_BANK			8	// 8个device
-#define VERSION_NUM					4	// MVCC版本的数量
-#define TABLE_INIT_DEBUG			false // valid only if PIM_ENABLE == ture
-// #define TABLE_UPDATE_DEBUG			false // valid only if PIM_ENABLE == ture
+#define BANK_CNT_PER_RANK			4	// the number of bank
+#define DEVICE_CNT_PER_BANK			8	// the number of device
+#define VERSION_NUM					4	// the version number of MVCC
+#define TABLE_DATA_DEBUG			false // valid only if PIM_ENABLE == ture
+#define TABLE_DETLA_DEBUG			false // valid only if PIM_ENABLE == ture
 
 // [DL_DETECT] 
 #define DL_LOOP_DETECT				1000 	// 100 us

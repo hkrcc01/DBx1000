@@ -239,6 +239,48 @@ void table_s::init_table_size(u_int32_t row_cnt) {
     }
 }
 
+void table_s::print_detla_line(u_int32_t version_id, u_int32_t storage_index) {
+    part * pa;
+    unsigned char * bytePtr;
+    u_int32_t banks_cnt = BANK_CNT_PER_RANK * RANK_CNT;
+    u_int32_t devices_cnt = DEVICE_CNT_PER_BANK;
+    u_int32_t versions_cnt = VERSION_NUM;
+
+    for (u_int32_t i = 0; i < parts_cnt; i++) {
+        printf("<====DEBUG_DETLA_");
+        
+        for (int nn = 0; name[nn] != '\0'; nn++) {
+            printf("%c", name[nn]);
+        }
+        
+        printf("_VERSION%d_LINE_%d_PARTATION_%d====>:\r\n", version_id, storage_index, i);
+
+        pa = parts[i];
+
+        // get the bank id
+        bytePtr = (unsigned char *)pa->detla[storage_index % banks_cnt];
+        // get the row id
+        bytePtr += (storage_index / banks_cnt) * versions_cnt * devices_cnt * pa->width;
+        // get the version id
+        bytePtr += version_id * devices_cnt * pa->width;
+
+        for (u_int32_t j = 0; j < devices_cnt; j++) {
+            printf("DEVICE_%d----> ", j);
+            for (u_int32_t k = 0; k < pa->width; k++){
+                printf("%02x ", bytePtr[j * pa->width + k]);
+            }
+            printf("\r\n");
+        }
+
+        // print the same number of signs as the name of the name
+        printf("<");
+        for (int nn = 0; name[nn] != '\0'; nn++) {
+            printf("=");
+        }
+        printf("===============================================>\r\n");
+    }
+}
+
 void table_s::print_line(u_int32_t line_index) {
     part * pa;
     unsigned char * bytePtr;

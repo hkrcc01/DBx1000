@@ -174,7 +174,7 @@ u_int32_t *** GetAllocArr(char * table_name, char * file_path,  u_int32_t &bank_
     }
   }
 
-#if TABLE_INIT_DEBUG
+#if TABLE_DATA_DEBUG
 
   printf("<====");
   for (int index = 0; table_name[index] != '\0'; index++) {

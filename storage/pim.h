@@ -39,6 +39,7 @@ public:
     void insert_detla(u_int32_t storage_index, u_int32_t version_id, row_t * r);
 
     void print_line(u_int32_t line_index);
+    void print_detla_line(u_int32_t version_id, u_int32_t storage_index);
 
     void get_value(u_int32_t field_index, u_int32_t row_index, void * &value);
 
